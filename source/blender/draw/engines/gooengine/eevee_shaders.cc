@@ -1329,7 +1329,9 @@ static const char *eevee_get_frag_info(int options, char **r_src)
   }
   else if ((options & VAR_MAT_DEPTH) != 0) {
     /* -- PREPASS FRAG -
-     * Select create info permutation for `prepass_frag`. */
+     * Select create info permutation for `prepass_frag`. The shadow variants declare the R16UI
+     * `resource_id_out` (shadow-ID pool); the depth prepass variants declare a VEC2 output
+     * matching the main FB instead (see eevee_legacy_material_info.hh). */
 
     const bool is_shadow = (options & VAR_MAT_SHADOW) != 0;
 

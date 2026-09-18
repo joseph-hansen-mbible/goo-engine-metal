@@ -178,8 +178,8 @@ uniform mat4 ModelMatrixInverse;
  * NOTE: This is only valid because we are only using the mat3 of the ViewMatrixInverse.
  * ViewMatrix * transpose(ModelMatrixInverse)
  */
-/* Metal (C04): mat3(mat4) implicit constructor is not allowed when the argument is a uniform in
- * constant address space. Explicitly extract the upper-left 3x3 via column xyz swizzles.
+/* Metal: the mat3(mat4) truncating constructor is not allowed when the argument is a uniform in
+ * the constant address space. Explicitly extract the upper-left 3x3 via column xyz swizzles.
  * Implemented as an inline function to avoid the glsl_preprocess macro linter false-positive
  * that matches the macro name pattern "mat3_from_mat4(m)" as a matrix constructor call. */
 mat3 goo_mat3_from_mat4(mat4 m)

@@ -606,16 +606,6 @@ void EEVEE_volumes_free()
   DRW_TEXTURE_FREE_SAFE(e_data.dummy_flame);
 }
 
-GPUTexture *EEVEE_volumes_get_dummy_scatter()
-{
-  return e_data.dummy_scatter;
-}
-
-GPUTexture *EEVEE_volumes_get_dummy_transmit()
-{
-  return e_data.dummy_transmit;
-}
-
 /* -------------------------------------------------------------------- */
 /** \name Render Passes
  * \{ */

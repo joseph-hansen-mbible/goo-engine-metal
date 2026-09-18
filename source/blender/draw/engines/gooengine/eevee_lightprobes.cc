@@ -207,6 +207,16 @@ void EEVEE_lightprobes_init(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata)
     e_data.planar_pool_placeholder = DRW_texture_create_2d_array_ex(
         1, 1, 1, GPU_RGBA8, planar_usage, DRW_TEX_FILTER, nullptr);
   }
+  /* Same for the depth pool. `txl->planar_depth` is swapped to this placeholder while planar
+   * reflections are rendered, but it was never allocated, so any `planarDepth` binding that
+   * references `txl->planar_depth` dereferenced a null texture during that render. The GL path
+   * never binds `planarDepth` on material shading groups, but Metal must bind every declared
+   * sampler, so adding a planar probe crashed there. */
+  if (!e_data.depth_array_placeholder) {
+    eGPUTextureUsage depth_usage = GPU_TEXTURE_USAGE_ATTACHMENT | GPU_TEXTURE_USAGE_SHADER_READ;
+    e_data.depth_array_placeholder = DRW_texture_create_2d_array_ex(
+        1, 1, 1, GPU_DEPTH_COMPONENT24, depth_usage, DRWTextureFlag(0), nullptr);
+  }
 }
 
 void EEVEE_lightbake_cache_init(EEVEE_ViewLayerData *sldata,
@@ -331,10 +341,6 @@ void EEVEE_lightprobes_cache_init(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedat
 
       grp = DRW_shgroup_material_create(gpumat, psl->probe_background);
       DRW_shgroup_uniform_float_copy(grp, "backgroundAlpha", 1.0f);
-
-      /* Bind all textures required by Material shaders on Metal */
-      EEVEE_material_bind_resources(
-          grp, gpumat, sldata, vedata, nullptr, nullptr, -1.0f, false, false);
     }
 
     DRW_shgroup_uniform_block(grp, "common_block", sldata->common_ubo);

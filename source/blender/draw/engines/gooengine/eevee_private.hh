@@ -1102,7 +1102,6 @@ GPUTexture *EEVEE_materials_get_util_tex(); /* XXX */
 GPUTexture *EEVEE_materials_get_dummy_2d_array();
 GPUTexture *EEVEE_materials_get_dummy_cube_array();
 GPUTexture *EEVEE_materials_get_dummy_2d();
-GPUTexture *EEVEE_materials_get_dummy_3d();
 #endif
 
 void EEVEE_materials_init(EEVEE_ViewLayerData *sldata,
@@ -1559,8 +1558,6 @@ void EEVEE_volumes_resolve(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata);
 void EEVEE_volumes_output_init(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata, uint tot_samples);
 void EEVEE_volumes_output_accumulate(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata);
 void EEVEE_volumes_free();
-GPUTexture *EEVEE_volumes_get_dummy_scatter();
-GPUTexture *EEVEE_volumes_get_dummy_transmit();
 
 /* `eevee_effects.cc` */
 
@@ -1623,15 +1620,12 @@ float *EEVEE_lut_update_ggx_btdf(int lut_size, int lut_depth);
 
 /* Shadow Matrix */
 static const float texcomat[4][4] = {
-    /* From NDC to TexCo (OpenGL: NDC Z is [-1,1]) */
+    /* From NDC to TexCo */
     {0.5f, 0.0f, 0.0f, 0.0f},
     {0.0f, 0.5f, 0.0f, 0.0f},
     {0.0f, 0.0f, 0.5f, 0.0f},
     {0.5f, 0.5f, 0.5f, 1.0f},
 };
-
-/* texcomat_metal removed: the Metal projmat pre-adjustment was incorrect (ISS-003).
- * mtl_shader_generator converts Z automatically; use standard texcomat instead. */
 
 /* Cube-map Matrices */
 static const float cubefacemat[6][4][4] = {

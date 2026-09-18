@@ -146,12 +146,12 @@ GPU_SHADER_CREATE_END()
 /** \name Pre-pass Shader
  * \{ */
 
-/* Common info for all `prepass_frag` variants. */
-/* ISS-013 Fix L: removed FRAGMENT_OUT(1, UINT, resource_id_out). It was vestigial (written in
- * prepass_frag.glsl but never read as a texture anywhere) and it occupied location 1 — the
- * ssr_normal_input (RG16) buffer that gtao/SSR read as the normalBuffer. That forced out_normal to
- * location 2 (ssr_specrough RGBA16F), which Metal rejects (VEC2 < 4 components → PSO fail → prepass
- * skipped) and which on every backend wrote resource_id garbage into the normal buffer. */
+/* Common info for all `prepass_frag` variants.
+ * NOTE: `resource_id_out` is only declared on the shadow variants below (their FB has the R16UI
+ * shadow-ID pool at attachment 1). The depth prepass draws into the main FB, whose attachment 1 is
+ * the RG16 ssr_normal buffer: Metal refuses a UINT output against it at pipeline creation, so the
+ * non-shadow variants declare a VEC2 `out_normal` at location 1 instead. The depth prepass has
+ * colour writes disabled, so this output never reaches the buffer on any backend. */
 GPU_SHADER_CREATE_INFO(eevee_legacy_material_prepass_frag_common)
 ADDITIONAL_INFO(eevee_legacy_common_lib)
 ADDITIONAL_INFO(eevee_legacy_common_utiltex_lib)
@@ -167,20 +167,20 @@ GPU_SHADER_CREATE_END()
 GPU_SHADER_CREATE_INFO(eevee_legacy_material_prepass_frag_opaque)
 ADDITIONAL_INFO(eevee_legacy_surface_lib_common)
 ADDITIONAL_INFO(eevee_legacy_material_prepass_frag_opaque_common)
-FRAGMENT_OUT(1, VEC2, out_normal); /* ISS-013 Fix L: loc2->loc1 (ssr_normal RG16) */
+FRAGMENT_OUT(1, VEC2, out_normal);
 GPU_SHADER_CREATE_END()
 
 GPU_SHADER_CREATE_INFO(eevee_legacy_material_prepass_frag_opaque_hair)
 ADDITIONAL_INFO(eevee_legacy_surface_lib_hair)
 ADDITIONAL_INFO(eevee_legacy_material_prepass_frag_opaque_common)
 ADDITIONAL_INFO(draw_hair)
-FRAGMENT_OUT(1, VEC2, out_normal); /* ISS-013 Fix L: loc2->loc1 (ssr_normal RG16) */
+FRAGMENT_OUT(1, VEC2, out_normal);
 GPU_SHADER_CREATE_END()
 
 GPU_SHADER_CREATE_INFO(eevee_legacy_material_prepass_frag_opaque_pointcloud)
 ADDITIONAL_INFO(eevee_legacy_material_prepass_frag_opaque_common)
 ADDITIONAL_INFO(draw_pointcloud)
-FRAGMENT_OUT(1, VEC2, out_normal); /* ISS-013 Fix L: loc2->loc1 (ssr_normal RG16) */
+FRAGMENT_OUT(1, VEC2, out_normal);
 GPU_SHADER_CREATE_END()
 
 /* Common info for all `prepass_frag_alpha_hash` variants. */
@@ -193,32 +193,28 @@ GPU_SHADER_CREATE_END()
 GPU_SHADER_CREATE_INFO(eevee_legacy_material_prepass_frag_alpha_hash)
 ADDITIONAL_INFO(eevee_legacy_surface_lib_common)
 ADDITIONAL_INFO(eevee_legacy_material_prepass_frag_alpha_hash_common)
-FRAGMENT_OUT(1, VEC2, out_normal); /* ISS-013 Fix L: loc2->loc1 (ssr_normal RG16) */
+FRAGMENT_OUT(1, VEC2, out_normal);
 GPU_SHADER_CREATE_END()
 
 GPU_SHADER_CREATE_INFO(eevee_legacy_material_prepass_frag_alpha_hash_hair)
 ADDITIONAL_INFO(eevee_legacy_surface_lib_hair)
 ADDITIONAL_INFO(eevee_legacy_material_prepass_frag_alpha_hash_common)
 ADDITIONAL_INFO(draw_hair)
-FRAGMENT_OUT(1, VEC2, out_normal); /* ISS-013 Fix L: loc2->loc1 (ssr_normal RG16) */
+FRAGMENT_OUT(1, VEC2, out_normal);
 GPU_SHADER_CREATE_END()
 
 GPU_SHADER_CREATE_INFO(eevee_legacy_material_prepass_frag_alpha_hash_pointcloud)
 ADDITIONAL_INFO(eevee_legacy_surface_lib_pointcloud)
 ADDITIONAL_INFO(eevee_legacy_material_prepass_frag_alpha_hash_common)
 ADDITIONAL_INFO(draw_pointcloud)
-FRAGMENT_OUT(1, VEC2, out_normal); /* ISS-013 Fix L: loc2->loc1 (ssr_normal RG16) */
+FRAGMENT_OUT(1, VEC2, out_normal);
 GPU_SHADER_CREATE_END()
 
 /* Shadow Variants (Same as prepass but NO Normal Output) */
 
-/* Fix S (ISS-017/018): FRAGMENT_OUT(1, UINT, resource_id_out) restored on all shadow variants.
- * Upstream inherits it from prepass_frag_common; Fix L removed it there believing it vestigial, but
- * the shadow FB binds the R16UI shadow ID pool at attachment 1 (eevee_shadows_cascade.cc /
- * eevee_shadows_cube.cc) and sample_ID_texture (lights_lib.glsl, USE_SHADOW_ID) reads it to suppress
- * same-object self-shadow — live on GL/Windows; with the pool never written Mac over-shadows.
- * Non-shadow prepass variants keep Fix L's loc1=out_normal (ssr_normal RG16).
- * See HYPOTHCARD_FixS_ISS017_018.md. NOTE: create-info changes need a cmake reconfigure. */
+/* The shadow FB binds the R16UI shadow-ID pool at attachment 1 (eevee_shadows_cascade.cc /
+ * eevee_shadows_cube.cc); sample_ID_texture (lights_lib.glsl, USE_SHADOW_ID) reads it to suppress
+ * same-object self-shadowing, so every shadow variant must write `resource_id_out`. */
 GPU_SHADER_CREATE_INFO(eevee_legacy_material_shadow_frag_opaque)
 ADDITIONAL_INFO(eevee_legacy_surface_lib_common)
 ADDITIONAL_INFO(eevee_legacy_material_prepass_frag_opaque_common)
@@ -256,8 +252,6 @@ GPU_SHADER_CREATE_INFO(eevee_legacy_material_shadow_frag_alpha_hash_pointcloud)
 ADDITIONAL_INFO(eevee_legacy_surface_lib_pointcloud)
 ADDITIONAL_INFO(eevee_legacy_material_prepass_frag_alpha_hash_common)
 ADDITIONAL_INFO(draw_pointcloud)
-/* Fix S: was FRAGMENT_OUT(1, VEC2, out_normal) — the SHADOW_PASS shader never writes out_normal and
- * the shadow FB's attachment 1 is the R16UI id pool, so declare the id out like the other variants. */
 FRAGMENT_OUT(1, UINT, resource_id_out)
 GPU_SHADER_CREATE_END()
 

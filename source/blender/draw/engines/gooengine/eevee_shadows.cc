@@ -13,11 +13,26 @@
 
 #include "DEG_depsgraph_query.hh"
 
-#include "GPU_debug.hh"
+#include "GPU_context.hh"
 
 #include "eevee_private.hh"
 
 #define SH_CASTER_ALLOC_CHUNK 32
+
+#ifdef WITH_METAL_BACKEND
+/* Clear every layer of a freshly created shadow depth pool to 1.0 (far). */
+static void eevee_shadow_pool_clear_layers(GPUTexture *pool, int layers)
+{
+  GPUFrameBuffer *tmp_fb = GPU_framebuffer_create("shadow_clear_fb");
+  for (int i = 0; i < layers; i++) {
+    GPU_framebuffer_texture_layer_attach(tmp_fb, pool, 0, i, 0);
+    GPU_framebuffer_bind(tmp_fb);
+    GPU_framebuffer_clear_depth(tmp_fb, 1.0f);
+  }
+  GPU_framebuffer_free(tmp_fb);
+  GPU_framebuffer_restore();
+}
+#endif
 
 void eevee_contact_shadow_setup(const Light *la, EEVEE_Shadow *evsh)
 {
@@ -59,12 +74,8 @@ void EEVEE_shadows_init(EEVEE_ViewLayerData *sldata)
   int sh_cube_size = scene_eval->eevee.shadow_cube_size;
   int sh_cascade_size = scene_eval->eevee.shadow_cascade_size;
   const bool sh_high_bitdepth = (scene_eval->eevee.flag & SCE_EEVEE_SHADOW_HIGH_BITDEPTH) != 0;
-  const bool sh_id_high_bitdepth = (scene_eval->eevee.flag & SCE_EEVEE_SHADOW_ID_HIGH_BITDEPTH) !=
-                                   0;
+  const bool sh_id_high_bitdepth = (scene_eval->eevee.flag & SCE_EEVEE_SHADOW_ID_HIGH_BITDEPTH) != 0;
   sldata->lights->soft_shadows = (scene_eval->eevee.flag & SCE_EEVEE_SHADOW_SOFT) != 0;
-
-  CLAMP(sh_cube_size, 256, 4096);
-  CLAMP(sh_cascade_size, 256, 4096);
 
   EEVEE_LightsInfo *linfo = sldata->lights;
   if ((linfo->shadow_cube_size != sh_cube_size) ||
@@ -74,6 +85,7 @@ void EEVEE_shadows_init(EEVEE_ViewLayerData *sldata)
     BLI_assert((sh_cube_size > 0) && (sh_cube_size <= 4096));
     DRW_TEXTURE_FREE_SAFE(sldata->shadow_cube_pool);
     DRW_TEXTURE_FREE_SAFE(sldata->shadow_cube_id_pool);
+    CLAMP(sh_cube_size, 1, 4096);
   }
 
   if ((linfo->shadow_cascade_size != sh_cascade_size) ||
@@ -83,6 +95,7 @@ void EEVEE_shadows_init(EEVEE_ViewLayerData *sldata)
     BLI_assert((sh_cascade_size > 0) && (sh_cascade_size <= 4096));
     DRW_TEXTURE_FREE_SAFE(sldata->shadow_cascade_pool);
     DRW_TEXTURE_FREE_SAFE(sldata->shadow_cascade_id_pool);
+    CLAMP(sh_cascade_size, 1, 4096);
   }
 
   linfo->shadow_high_bitdepth = sh_high_bitdepth;
@@ -114,11 +127,7 @@ void EEVEE_shadows_cache_init(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata)
 
   {
     DRWState state = DRW_STATE_WRITE_DEPTH | DRW_STATE_DEPTH_LESS_EQUAL | DRW_STATE_SHADOW_OFFSET | DRW_STATE_WRITE_COLOR;
-    /* Named pass: label becomes the Metal render encoder label in Xcode Frame Debugger.
-     * Search "GOOENG:ShadowPass" to find the encoder where DRW_STATE_SHADOW_OFFSET is active.
-     * Fix G (2026-04-28): depth_bias=1.0 slope_scale=2.0 (was 2.0/1.0) to match glPolygonOffset(2,1). */
-    psl->shadow_pass = DRW_pass_create(
-        "GOOENG:ShadowPass [SHADOW_OFFSET:bias=1.0 slopeScale=2.0 mtl_state.mm Fix-G]", state);
+    DRW_PASS_CREATE(psl->shadow_pass, state);
 
     stl->g_data->shadow_shgrp = DRW_shgroup_create(EEVEE_shaders_shadow_sh_get(),
                                                    psl->shadow_pass);
@@ -220,8 +229,7 @@ void EEVEE_shadows_update(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata)
   eGPUTextureFormat shadow_pool_format = (linfo->shadow_high_bitdepth) ? GPU_DEPTH_COMPONENT24 :
                                                                          GPU_DEPTH_COMPONENT16;
                                                                          
-  eGPUTextureFormat shadow_id_pool_format = (linfo->shadow_id_high_bitdepth) ? GPU_R32UI :
-                                                                               GPU_R16UI;
+  eGPUTextureFormat shadow_id_pool_format = (linfo->shadow_id_high_bitdepth) ? GPU_R32UI : GPU_R16UI;
 
   /* Setup enough layers. */
   /* Free textures if number mismatch. */
@@ -256,17 +264,13 @@ void EEVEE_shadows_update(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata)
                                                               shadow_id_pool_format,
                                                               static_cast<DRWTextureFlag>(0),
                                                               nullptr);
-
-    /* GooEngine Fix: Manually clear all layers to 1.0 (Far) to prevent black artifacts. */
-    GPUFrameBuffer *tmp_fb = GPU_framebuffer_create("shadow_clear_fb");
-    int layers = max_ii(1, linfo->num_cube_layer * 6);
-    for (int i = 0; i < layers; i++) {
-      GPU_framebuffer_texture_layer_attach(tmp_fb, sldata->shadow_cube_pool, 0, i, 0);
-      GPU_framebuffer_bind(tmp_fb);
-      GPU_framebuffer_clear_depth(tmp_fb, 1.0f);
+#ifdef WITH_METAL_BACKEND
+    if (GPU_backend_get_type() == GPU_BACKEND_METAL) {
+      /* Metal leaves new texture storage undefined; clear every layer to "far" so layers that
+       * are not rendered this frame don't produce black shadow artifacts. */
+      eevee_shadow_pool_clear_layers(sldata->shadow_cube_pool, max_ii(1, linfo->num_cube_layer * 6));
     }
-    GPU_framebuffer_free(tmp_fb);
-    GPU_framebuffer_restore();
+#endif
   }
 
   if (!sldata->shadow_cascade_pool) {
@@ -278,24 +282,18 @@ void EEVEE_shadows_update(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata)
         shadow_usage,
         DRWTextureFlag(DRW_TEX_FILTER | DRW_TEX_COMPARE),
         nullptr);
-    sldata->shadow_cascade_id_pool = DRW_texture_create_2d_array(
-        linfo->shadow_cascade_size,
-        linfo->shadow_cascade_size,
-        max_ii(1, linfo->num_cascade_layer),
-        shadow_id_pool_format,
-        static_cast<DRWTextureFlag>(0),
-        nullptr);
-
-    /* GooEngine Fix: Manually clear all layers to 1.0 (Far) to prevent black artifacts. */
-    GPUFrameBuffer *tmp_fb = GPU_framebuffer_create("shadow_clear_fb");
-    int layers = max_ii(1, linfo->num_cascade_layer);
-    for (int i = 0; i < layers; i++) {
-      GPU_framebuffer_texture_layer_attach(tmp_fb, sldata->shadow_cascade_pool, 0, i, 0);
-      GPU_framebuffer_bind(tmp_fb);
-      GPU_framebuffer_clear_depth(tmp_fb, 1.0f);
+    sldata->shadow_cascade_id_pool = DRW_texture_create_2d_array(linfo->shadow_cascade_size,
+                                                                 linfo->shadow_cascade_size,
+                                                                 max_ii(1, linfo->num_cascade_layer),
+                                                                 shadow_id_pool_format,
+                                                                 static_cast<DRWTextureFlag>(0),
+                                                                 nullptr);
+#ifdef WITH_METAL_BACKEND
+    if (GPU_backend_get_type() == GPU_BACKEND_METAL) {
+      eevee_shadow_pool_clear_layers(sldata->shadow_cascade_pool,
+                                     max_ii(1, linfo->num_cascade_layer));
     }
-    GPU_framebuffer_free(tmp_fb);
-    GPU_framebuffer_restore();
+#endif
   }
 
   if (sldata->shadow_fb == nullptr) {
@@ -383,22 +381,9 @@ void EEVEE_shadows_draw(EEVEE_ViewLayerData *sldata, EEVEE_Data *vedata, DRWView
   }
 
   {
-    /* ISS-017 Xcode anchor: search "ISS017_CASCADE" in the Metal debugger to jump to the
-     * Sun cascade shadow render. The Depth render target of these draws IS shadowCascadePool
-     * (shadow_cascade_size² x num_cascade_layer depth array; default 1024x1024xN, DRW_TEX_COMPARE).
-     * Open its Depth Attachment -> Texture Viewer to read the *STORED* cascade depth at the same
-     * coord.xy/layer the MaterialOpaque fragment reports, and compute the additive error
-     * Delta = shpos.z - STORED (ISS-017 target 2026-06-27 — a constant positive Delta is the bug;
-     * [0.5,1]/C09 is refuted). Compare against what sample_cascade_shadow() reads in the
-     * "ISS017_CASCADE >>> MaterialOpaque" draw. IDENTITY FIRST: first confirm shadowCascadeTexture
-     * there is THIS 1024² depth array (not utilTex / a colour target) — a binding mismatch was the
-     * ISS-011 cube root cause (Fix J). */
-    GPU_debug_group_begin(
-        "ISS017_CASCADE >>> CascadeDraw (renders shadowCascadePool depth — inspect STORED depth) <<<");
     for (int cascade = 0; cascade < linfo->cascade_len; cascade++) {
       EEVEE_shadows_draw_cascades(sldata, vedata, view, cascade);
     }
-    GPU_debug_group_end();
   }
 
   DRW_view_set_active(view);
@@ -432,10 +417,8 @@ void EEVEE_shadow_output_init(EEVEE_ViewLayerData *sldata,
                                 {GPU_ATTACHMENT_NONE, GPU_ATTACHMENT_TEXTURE(txl->shadow_accum)});
 
   /* Create Pass and shgroup. */
-  /* Named pass: Metal encoder label for shadow accumulation pass. */
-  psl->shadow_accum_pass = DRW_pass_create(
-      "GOOENG:ShadowAccum [PCF accumulation — reads shadowCubeTexture]",
-      DRW_STATE_WRITE_COLOR | DRW_STATE_DEPTH_ALWAYS | DRW_STATE_BLEND_ADD_FULL);
+  DRW_PASS_CREATE(psl->shadow_accum_pass,
+                  DRW_STATE_WRITE_COLOR | DRW_STATE_DEPTH_ALWAYS | DRW_STATE_BLEND_ADD_FULL);
   DRWShadingGroup *grp = DRW_shgroup_create(EEVEE_shaders_shadow_accum_sh_get(),
                                             psl->shadow_accum_pass);
   DRW_shgroup_uniform_texture_ref(grp, "depthBuffer", &dtxl->depth);
@@ -464,10 +447,7 @@ void EEVEE_shadow_output_accumulate(EEVEE_ViewLayerData * /*sldata*/, EEVEE_Data
   if (fbl->shadow_accum_fb != nullptr) {
     GPU_framebuffer_bind(fbl->shadow_accum_fb);
 
-    /* Clear texture only on the first TAA sample (matching OpenGL behavior).
-     * Previously Metal cleared every frame (#ifdef __APPLE__), which was a workaround
-     * for ISS-003 (shadow double-transform). Now that ISS-003 is fixed, use the
-     * standard path: clear once per TAA sequence, allow accumulation across samples. */
+    /* Clear texture. */
     if (effects->taa_current_sample == 1) {
       const float clear[4] = {0.0f, 0.0f, 0.0f, 0.0f};
       GPU_framebuffer_clear_color(fbl->shadow_accum_fb, clear);

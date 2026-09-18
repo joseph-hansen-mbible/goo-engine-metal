@@ -410,7 +410,7 @@ void node_sdf_vector_op_mirror(vec3 p,
 {
   p = axis_swizzle(p, axis);
   // pos.xy = sdf_op_mirror(p, p2);
-  /* ISS-016: MSL no inout-to-swizzle. */
+  /* MSL: no inout to a swizzle. */
   vec2 _pxy = p.xy;
   vec2 _r = p_mod_grid2(_pxy, p2.xy);
   p.xy = _pxy;
@@ -436,7 +436,7 @@ void node_sdf_vector_op_polar(vec3 p,
                               out float d)
 {
   p = axis_swizzle(p, axis);
-  /* ISS-016: MSL no inout-to-swizzle. */
+  /* MSL: no inout to a swizzle. */
   vec2 _pxy = p.xy;
   d = sdf_op_polar(_pxy, v);
   p.xy = _pxy;
@@ -582,7 +582,7 @@ void node_sdf_vector_op_octant(vec3 p,
   p = axis_swizzle(p, axis);
   float size = v;
   vec3 s = sgn(p);
-  /* ISS-016: MSL no inout-to-vector-element. */
+  /* MSL: no inout to a vector element. */
   float _px = p.x;
   p_mirror(_px, size);
   p.x = _px;

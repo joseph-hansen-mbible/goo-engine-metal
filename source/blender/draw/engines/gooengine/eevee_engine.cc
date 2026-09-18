@@ -21,7 +21,6 @@
 #include "DNA_world_types.h"
 
 #include "GPU_context.hh"
-#include "GPU_debug.hh"
 
 #include "IMB_imbuf.hh"
 
@@ -171,7 +170,7 @@ static void eevee_cache_finish(void *vedata)
   uint tot_samples = scene_eval->eevee.taa_render_samples;
   uint vl_samples = draw_ctx->view_layer->samples;
 
-  if (vl_samples > 0) {
+  if (vl_samples > 0){
     tot_samples = vl_samples;
   }
 
@@ -285,13 +284,16 @@ static void eevee_draw_scene(void *vedata)
       sldata->common_data.prb_num_render_cube = 1;
       sldata->common_data.prb_num_render_grid = 1;
     }
-    /* Fix A: Re-upload LightBlock UBO at draw time. The original upload in
-     * EEVEE_lights_cache_finish() (eevee_lights.cc:274) happens too early (~149 lines
-     * before draw). On Metal, the MTLBuffer can be invalidated/recycled between
-     * that early upload and the actual draw, causing a zero-filled dummy buffer
-     * to be bound instead. ShadowBlock and CommonBlock don't have this problem
-     * because they are uploaded here, right before the draw passes. */
-    GPU_uniformbuf_update(sldata->light_ubo, &sldata->lights->light_data);
+#ifdef WITH_METAL_BACKEND
+    if (GPU_backend_get_type() == GPU_BACKEND_METAL) {
+      /* Re-upload the LightBlock UBO at draw time. The upload in EEVEE_lights_cache_finish()
+       * happens too early: on Metal the MTLBuffer can be invalidated/recycled between that early
+       * upload and the actual draw, leaving a zero-filled buffer bound. ShadowBlock and
+       * CommonBlock don't have this problem because they are uploaded here, right before the
+       * draw passes. */
+      GPU_uniformbuf_update(sldata->light_ubo, &sldata->lights->light_data);
+    }
+#endif
     GPU_uniformbuf_update(sldata->common_ubo, &sldata->common_data);
 
     GPU_framebuffer_bind(fbl->main_fb);
@@ -301,9 +303,7 @@ static void eevee_draw_scene(void *vedata)
     GPU_framebuffer_clear(fbl->main_fb, clear_bits, clear_col, clear_depth, clear_stencil);
 
     /* Depth pre-pass. */
-    GPU_debug_group_begin("EEVEE: DepthPrePass");
     DRW_draw_pass(psl->depth_ps);
-    GPU_debug_group_end();
 
     /* Create minmax texture */
     EEVEE_create_minmax_buffer(static_cast<EEVEE_Data *>(vedata), dtxl->depth, -1);
@@ -315,9 +315,7 @@ static void eevee_draw_scene(void *vedata)
     if (DRW_state_draw_background()) {
       DRW_draw_pass(psl->background_ps);
     }
-    GPU_debug_group_begin("EEVEE: MaterialOpaque [laNumLight/LTC check here]");
     DRW_draw_pass(psl->material_ps);
-    GPU_debug_group_end();
     EEVEE_subsurface_data_render(sldata, static_cast<EEVEE_Data *>(vedata));
 
     /* Effects pre-transparency */
@@ -330,10 +328,8 @@ static void eevee_draw_scene(void *vedata)
     EEVEE_refraction_compute(sldata, static_cast<EEVEE_Data *>(vedata));
 
     /* Opaque refraction */
-    GPU_debug_group_begin("EEVEE: MaterialRefract");
     DRW_draw_pass(psl->depth_refract_ps);
     DRW_draw_pass(psl->material_refract_ps);
-    GPU_debug_group_end();
 
     /* Streamlined version of EEVEE_refraction_compute to just copy the colour buffer */
     EEVEE_effects_radiance_copy(sldata, static_cast<EEVEE_Data *>(vedata));
@@ -402,6 +398,7 @@ static void eevee_draw_scene(void *vedata)
   DRW_view_set_active(nullptr);
 }
 
+#ifdef WITH_METAL_BACKEND
 /* Recalc flags that don't affect rendering (no TAA reset needed).
  * ID_RECALC_SELECT: object selected/deselected — shadow geometry unchanged.
  * ID_RECALC_EDITORS: editor UI state only — no rendering change.
@@ -412,6 +409,23 @@ static constexpr uint EEVEE_NON_VISUAL_RECALC = uint(ID_RECALC_SELECT) |
                                                 uint(ID_RECALC_EDITORS) |
                                                 uint(ID_RECALC_BASE_FLAGS);
 
+/* Metal only: ignore selection-only depsgraph updates so the TAA accumulation (and with it the
+ * soft-shadow accumulation) does not restart on every click. The GL path keeps upstream's
+ * behaviour of resetting on any update. */
+static bool eevee_recalc_is_visual(uint recalc)
+{
+  if (GPU_backend_get_type() != GPU_BACKEND_METAL) {
+    return true;
+  }
+  return (recalc & ~EEVEE_NON_VISUAL_RECALC) != 0;
+}
+#else
+static bool eevee_recalc_is_visual(uint /*recalc*/)
+{
+  return true;
+}
+#endif
+
 static void eevee_view_update(void *vedata)
 {
   EEVEE_StorageList *stl = ((EEVEE_Data *)vedata)->stl;
@@ -419,35 +433,37 @@ static void eevee_view_update(void *vedata)
     return;
   }
 
-  /* Skip TAA reset for selection-only depsgraph updates (ISS-003b).
-   * Object selection changes (ID_RECALC_SELECT) don't affect rendering, so
-   * resetting TAA here would cause shadow accumulation to fade on selection. */
-  const DRWContextState *draw_ctx = DRW_context_state_get();
-  Depsgraph *depsgraph = draw_ctx ? draw_ctx->depsgraph : nullptr;
-  if (depsgraph) {
-    bool has_visual_change = false;
+#ifdef WITH_METAL_BACKEND
+  if (GPU_backend_get_type() == GPU_BACKEND_METAL) {
+    /* Skip the TAA reset for selection-only depsgraph updates (see eevee_recalc_is_visual). */
+    const DRWContextState *draw_ctx = DRW_context_state_get();
+    Depsgraph *depsgraph = draw_ctx ? draw_ctx->depsgraph : nullptr;
+    if (depsgraph) {
+      bool has_visual_change = false;
 
-    DEGIDIterData iter_data{};
-    iter_data.graph = depsgraph;
-    iter_data.only_updated = true;
+      DEGIDIterData iter_data{};
+      iter_data.graph = depsgraph;
+      iter_data.only_updated = true;
 
-    BLI_Iterator iter;
-    BLI_ITERATOR_INIT(&iter);
-    DEG_iterator_ids_begin(&iter, &iter_data);
-    while (iter.valid) {
-      ID *id = static_cast<ID *>(iter.current);
-      if (id->recalc & ~EEVEE_NON_VISUAL_RECALC) {
-        has_visual_change = true;
-        break;
+      BLI_Iterator iter;
+      BLI_ITERATOR_INIT(&iter);
+      DEG_iterator_ids_begin(&iter, &iter_data);
+      while (iter.valid) {
+        ID *id = static_cast<ID *>(iter.current);
+        if (eevee_recalc_is_visual(id->recalc)) {
+          has_visual_change = true;
+          break;
+        }
+        DEG_iterator_ids_next(&iter);
       }
-      DEG_iterator_ids_next(&iter);
-    }
-    DEG_iterator_ids_end(&iter);
+      DEG_iterator_ids_end(&iter);
 
-    if (!has_visual_change) {
-      return;
+      if (!has_visual_change) {
+        return;
+      }
     }
   }
+#endif
 
   stl->g_data->view_updated = true;
 }
@@ -461,16 +477,14 @@ static void eevee_id_object_update(void * /*vedata*/, Object *object)
   }
   EEVEE_LightEngineData *led = EEVEE_light_data_get(object);
   if (led != nullptr && led->dd.recalc != 0) {
-    /* Only schedule shadow re-render for visual changes, not selection. */
-    if (led->dd.recalc & ~EEVEE_NON_VISUAL_RECALC) {
+    if (eevee_recalc_is_visual(led->dd.recalc)) {
       led->need_update = true;
     }
     led->dd.recalc = 0;
   }
   EEVEE_ObjectEngineData *oedata = EEVEE_object_data_get(object);
   if (oedata != nullptr && oedata->dd.recalc != 0) {
-    /* Only mark shadow caster dirty for visual changes, not selection. */
-    if (oedata->dd.recalc & ~EEVEE_NON_VISUAL_RECALC) {
+    if (eevee_recalc_is_visual(oedata->dd.recalc)) {
       oedata->need_update = true;
     }
     oedata->geom_update = (oedata->dd.recalc & (ID_RECALC_GEOMETRY)) != 0;

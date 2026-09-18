@@ -576,7 +576,7 @@ static PyObject *pygpu_shader_uniform_sampler(BPyGPUShader *self, PyObject *args
   int slot = GPU_shader_get_sampler_binding(self->shader, name);
   GPU_texture_bind(py_texture->tex, slot);
   /* Metal binds textures via argument buffer; GPU_texture_bind() is sufficient.
-   * GPU_shader_uniform_1i() for a sampler location triggers C10 REMAP and silently fails. */
+   * Setting a sampler location with GPU_shader_uniform_1i() is unsupported there. */
   if (GPU_backend_get_type() != GPU_BACKEND_METAL) {
     GPU_shader_uniform_1i(self->shader, name, slot);
   }
