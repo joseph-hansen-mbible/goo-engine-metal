@@ -146,7 +146,7 @@ static void VIEW3D_OT_pastebuffer(wmOperatorType *ot)
   RNA_def_boolean(ot->srna, "autoselect", true, "Select", "Select pasted objects");
   RNA_def_boolean(ot->srna,
                   "active_collection",
-                  true,
+                  false,
                   "Active Collection",
                   "Put pasted objects in the active collection");
 }
