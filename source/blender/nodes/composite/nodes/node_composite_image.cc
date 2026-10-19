@@ -6,6 +6,10 @@
  * \ingroup cmpnodes
  */
 
+
+// TODO: Add Frame input socket, make it work
+// -Joseph
+
 #include "node_composite_util.hh"
 
 #include "BLI_assert.h"

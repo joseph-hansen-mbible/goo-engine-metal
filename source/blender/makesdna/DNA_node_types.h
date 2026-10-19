@@ -129,7 +129,7 @@ typedef struct bNodeSocket {
   char identifier[64];
 
   /** MAX_NAME. */
-  char name[64];
+  char name[128];
 
   /** Only used for the Image and OutputFile nodes, should be removed at some point. */
   void *storage;
@@ -168,9 +168,9 @@ typedef struct bNodeSocket {
   char _pad[4];
 
   /** Custom dynamic defined label, MAX_NAME. */
-  char label[64];
+  char label[128];
   char short_label[64];
-  char description[64];
+  char description[128];
 
   /**
    * The default attribute name to use for geometry nodes modifier output attribute sockets.

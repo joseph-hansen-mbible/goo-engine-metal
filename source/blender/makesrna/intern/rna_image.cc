@@ -22,13 +22,12 @@
 #include "WM_types.hh"
 
 const EnumPropertyItem rna_enum_image_generated_type_items[] = {
-    {IMA_GENTYPE_BLANK, "BLANK", 0, "Blank", "Generate a blank image"},
-    {IMA_GENTYPE_GRID, "UV_GRID", 0, "UV Grid", "Generated grid to test UV mappings"},
     {IMA_GENTYPE_GRID_COLOR,
      "COLOR_GRID",
      0,
      "Color Grid",
      "Generated improved UV grid to test UV mappings"},
+     {IMA_GENTYPE_BLANK, "BLANK", 0, "Blank", "Generate a blank image"},
     {0, nullptr, 0, nullptr, nullptr},
 };
 
@@ -835,6 +834,9 @@ static void rna_def_imageuser(BlenderRNA *brna)
       prop, "Current Frame", "Current frame number in image sequence or movie");
 
   /* animation */
+  // TODO: This needs updated- get rid of frame_offset, frame_duration,
+  // Use frame socket instead
+  // - Joseph
   prop = RNA_def_property(srna, "use_cyclic", PROP_BOOLEAN, PROP_NONE);
   RNA_def_property_boolean_sdna(prop, nullptr, "cycl", 0);
   RNA_def_property_ui_text(prop, "Cyclic", "Cycle the images in the movie");

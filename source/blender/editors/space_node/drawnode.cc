@@ -7,6 +7,9 @@
  * \brief lower level node drawing for nodes (boarders, headers etc), also node layout.
  */
 
+// TODO: Add Frame input socket to Image Sequence node
+// -Joseph
+
 #include "BLI_color.hh"
 #include "BLI_string.h"
 #include "BLI_threads.h"
@@ -344,6 +347,8 @@ static void node_buts_image_user(uiLayout *layout,
     uiItemL(layout, numstr, ICON_NONE);
   }
 
+  // TODO: Update this to use the Frame input instead
+  // - Joseph
   if (ELEM(source, IMA_SRC_SEQUENCE, IMA_SRC_MOVIE)) {
     col = uiLayoutColumn(layout, true);
     uiItemR(col, ptr, "frame_duration", DEFAULT_FLAGS, std::nullopt, ICON_NONE);
@@ -1134,6 +1139,8 @@ namespace blender::ed::space_node {
 static const float virtual_node_socket_color[4] = {0.2, 0.2, 0.2, 1.0};
 
 /* maps standard socket integer type to a color */
+// TODO: I would like to expose these
+// - Joseph
 static const float std_node_socket_colors[][4] = {
     {0.63, 0.63, 0.63, 1.0}, /* SOCK_FLOAT */
     {0.39, 0.39, 0.78, 1.0}, /* SOCK_VECTOR */
@@ -1986,6 +1993,8 @@ void node_draw_nodesocket(const rctf *rect,
 #define LINK_RESOL 24
 #define LINK_WIDTH 2.5f
 #define ARROW_SIZE (7 * UI_SCALE_FAC)
+// TODO: Why 7? Expose this 
+// - Joseph
 
 /* Reroute arrow shape and mute bar. These are expanded here and shrunk in the GLSL code.
  * See: `gpu_shader_2D_nodelink_vert.glsl`. */

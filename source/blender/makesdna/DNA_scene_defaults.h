@@ -21,8 +21,8 @@
     .planes = R_IMF_PLANES_RGBA, \
     .imtype = R_IMF_IMTYPE_PNG, \
     .depth = R_IMF_CHAN_DEPTH_8, \
-    .quality = 90, \
-    .compress = 15, \
+    .quality = 100, \
+    .compress = 0, \
   }
 
 #define _DNA_DEFAULT_BakeData \
@@ -31,8 +31,8 @@
     .filepath = "//", \
     .flag = R_BAKE_CLEAR, \
     .pass_filter = R_BAKE_PASS_FILTER_ALL, \
-    .width = 512, \
-    .height = 512, \
+    .width = 2048, \
+    .height = 2048, \
     .margin = 16, \
     .margin_type = R_BAKE_ADJACENT_FACES, \
     .normal_space = R_BAKE_SPACE_TANGENT, \
@@ -114,7 +114,7 @@
  \
     .threads = 1, \
  \
-    .simplify_subsurf = 6, \
+    .simplify_subsurf = 1, \
     .simplify_particles = 1.0f, \
     .simplify_volumes = 1.0f, \
  \
@@ -244,8 +244,8 @@
  \
     .clamp_surface_indirect = 10.0f, \
 \
-    .shadow_cube_size = 512, \
-    .shadow_cascade_size = 1024, \
+    .shadow_cube_size = 4096, \
+    .shadow_cascade_size = 4096, \
     .shadow_ray_count = 1, \
     .shadow_step_count = 6, \
     .shadow_resolution_scale = 1.0f, \

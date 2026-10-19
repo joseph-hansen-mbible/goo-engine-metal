@@ -6543,7 +6543,7 @@ static void rna_def_scene_ffmpeg_settings(BlenderRNA *brna)
   RNA_def_property_enum_bitflag_sdna(prop, nullptr, "type");
   RNA_def_property_clear_flag(prop, PROP_ANIMATABLE);
   RNA_def_property_enum_items(prop, ffmpeg_format_items);
-  RNA_def_property_enum_default(prop, FFMPEG_MKV);
+  RNA_def_property_enum_default(prop, FFMPEG_MPEG4);
   RNA_def_property_ui_text(prop, "Container", "Output file container");
 
   prop = RNA_def_property(srna, "codec", PROP_ENUM, PROP_NONE);

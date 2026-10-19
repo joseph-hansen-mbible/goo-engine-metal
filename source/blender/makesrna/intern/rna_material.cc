@@ -28,18 +28,19 @@
 
 const EnumPropertyItem rna_enum_ramp_blend_items[] = {
     {MA_RAMP_BLEND, "MIX", 0, "Mix", ""},
+    {MA_RAMP_MULT, "MULTIPLY", 0, "Multiply", ""},
+    {MA_RAMP_SCREEN, "SCREEN", 0, "Screen", ""},
+    {MA_RAMP_ADD, "ADD", 0, "Add", ""},
+    {MA_RAMP_OVERLAY, "OVERLAY", 0, "Overlay", ""},
+    {MA_RAMP_SOFT, "SOFT_LIGHT", 0, "Soft Light", ""},
+    {MA_RAMP_COLOR, "COLOR", 0, "Color", ""},
     RNA_ENUM_ITEM_SEPR,
     {MA_RAMP_DARK, "DARKEN", 0, "Darken", ""},
-    {MA_RAMP_MULT, "MULTIPLY", 0, "Multiply", ""},
     {MA_RAMP_BURN, "BURN", 0, "Color Burn", ""},
     RNA_ENUM_ITEM_SEPR,
     {MA_RAMP_LIGHT, "LIGHTEN", 0, "Lighten", ""},
-    {MA_RAMP_SCREEN, "SCREEN", 0, "Screen", ""},
     {MA_RAMP_DODGE, "DODGE", 0, "Color Dodge", ""},
-    {MA_RAMP_ADD, "ADD", 0, "Add", ""},
     RNA_ENUM_ITEM_SEPR,
-    {MA_RAMP_OVERLAY, "OVERLAY", 0, "Overlay", ""},
-    {MA_RAMP_SOFT, "SOFT_LIGHT", 0, "Soft Light", ""},
     {MA_RAMP_LINEAR, "LINEAR_LIGHT", 0, "Linear Light", ""},
     RNA_ENUM_ITEM_SEPR,
     {MA_RAMP_DIFF, "DIFFERENCE", 0, "Difference", ""},
@@ -49,7 +50,6 @@ const EnumPropertyItem rna_enum_ramp_blend_items[] = {
     RNA_ENUM_ITEM_SEPR,
     {MA_RAMP_HUE, "HUE", 0, "Hue", ""},
     {MA_RAMP_SAT, "SATURATION", 0, "Saturation", ""},
-    {MA_RAMP_COLOR, "COLOR", 0, "Color", ""},
     {MA_RAMP_VAL, "VALUE", 0, "Value", ""},
     {0, nullptr, 0, nullptr, nullptr},
 };
@@ -820,7 +820,6 @@ void RNA_def_material(BlenderRNA *brna)
       {MA_FLAT, "FLAT", ICON_MATPLANE, "Flat", "Flat XY plane"},
       {MA_SPHERE, "SPHERE", ICON_MATSPHERE, "Sphere", "Sphere"},
       {MA_CUBE, "CUBE", ICON_MATCUBE, "Cube", "Cube"},
-      {MA_HAIR, "HAIR", ICON_CURVES, "Hair", "Hair strands"},
       {MA_SHADERBALL, "SHADERBALL", ICON_MATSHADERBALL, "Shader Ball", "Shader ball"},
       {MA_CLOTH, "CLOTH", ICON_MATCLOTH, "Cloth", "Cloth"},
       {MA_FLUID, "FLUID", ICON_MATFLUID, "Fluid", "Fluid"},
@@ -860,6 +859,12 @@ void RNA_def_material(BlenderRNA *brna)
   };
 
   static EnumPropertyItem prop_eevee_blend_items[] = {
+    {MA_BM_BLEND,
+       "BLEND",
+       0,
+       "Alpha Blend",
+       "Render polygon transparent, depending on alpha channel of the texture"},
+      {0, nullptr, 0, nullptr, nullptr},
       {MA_BM_SOLID, "OPAQUE", 0, "Opaque", "Render surface without transparency"},
       {MA_BM_CLIP,
        "CLIP",
@@ -871,12 +876,7 @@ void RNA_def_material(BlenderRNA *brna)
        0,
        "Alpha Hashed",
        "Use noise to dither the binary visibility (works well with multi-samples)"},
-      {MA_BM_BLEND,
-       "BLEND",
-       0,
-       "Alpha Blend",
-       "Render polygon transparent, depending on alpha channel of the texture"},
-      {0, nullptr, 0, nullptr, nullptr},
+      
   };
 
   static EnumPropertyItem prop_eevee_blend_shadow_items[] = {
