@@ -26,7 +26,7 @@
     .xray_alpha_wire = 0.5f, \
     .cavity_valley_factor = 1.0f, \
     .cavity_ridge_factor = 1.0f, \
-    .cavity_type = V3D_SHADING_CAVITY_CURVATURE, \
+    .cavity_type = V3D_SHADING_CAVITY_BOTH, \
     .curvature_ridge_factor = 1.0f, \
     .curvature_valley_factor = 1.0f, \
     .single_color = {0.8f, 0.8f, 0.8f}, \

@@ -39,7 +39,7 @@
 #define _DNA_DEFAULT_BevelModifierData \
   { \
     .value = 0.1f, \
-    .res = 1, \
+    .res = 2, \
     .flags = 0, \
     .val_flags = MOD_BEVEL_AMT_OFFSET, \
     .profile_type = MOD_BEVEL_PROFILE_SUPERELLIPSE, \
@@ -437,10 +437,10 @@
   { \
     .defgrp_name = "", \
     .target = NULL, \
-    .mode = MOD_NORMALEDIT_MODE_RADIAL, \
+    .mode = MOD_NORMALEDIT_MODE_DIRECTIONAL, \
     .flag = 0, \
     .mix_mode = MOD_NORMALEDIT_MIX_COPY, \
-    .mix_factor = 1.0f, \
+    .mix_factor = 0.2f, \
     .mix_limit = M_PI, \
     .offset = {0.0f, 0.0f, 0.0f}, \
   }
@@ -541,8 +541,8 @@
     .target = NULL, \
     .auxTarget = NULL, \
     .vgroup_name = "", \
-    .keepDist = 0.0f, \
-    .shrinkType = MOD_SHRINKWRAP_NEAREST_SURFACE, \
+    .keepDist = 0.01f, \
+    .shrinkType = MOD_SHRINKWRAP_CULL_TARGET_FRONTFACE, \
     .shrinkOpts = MOD_SHRINKWRAP_PROJECT_ALLOW_POS_DIR, \
     .shrinkMode = 0, \
     .projLimit = 0.0f, \

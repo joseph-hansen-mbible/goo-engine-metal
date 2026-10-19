@@ -18,9 +18,9 @@
   { \
     .aspx = 1.0, \
     .aspy = 1.0, \
-    .gen_x = 1024, \
-    .gen_y = 1024, \
-    .gen_type = IMA_GENTYPE_GRID, \
+    .gen_x = 2048, \
+    .gen_y = 2048, \
+    .gen_type = IMA_GENTYPE_GRID_COLOR, \
  \
     .gpuframenr = IMAGE_GPU_FRAME_NONE, \
     .gpu_pass = IMAGE_GPU_PASS_NONE, \

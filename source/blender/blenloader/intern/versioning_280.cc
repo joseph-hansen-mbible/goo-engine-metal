@@ -4838,7 +4838,7 @@ void blo_do_versions_280(FileData *fd, Library * /*lib*/, Main *bmain)
           LISTBASE_FOREACH (SpaceLink *, sl, &area->spacedata) {
             if (sl->spacetype == SPACE_VIEW3D) {
               View3D *v3d = (View3D *)sl;
-              v3d->shading.wire_color_type = V3D_SHADING_SINGLE_COLOR;
+              v3d->shading.wire_color_type = V3D_SHADING_RANDOM_COLOR;
             }
           }
         }
