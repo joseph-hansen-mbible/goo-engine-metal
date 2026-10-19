@@ -422,13 +422,6 @@ static void wm_link_append_properties_common(wmOperatorType *ot, bool is_link)
   prop = RNA_def_boolean(ot->srna, "autoselect", true, "Select", "Select new objects");
   RNA_def_property_flag(prop, PROP_SKIP_SAVE);
 
-  prop = RNA_def_boolean(ot->srna,
-                         "active_collection",
-                         true,
-                         "Active Collection",
-                         "Put new objects on the active collection");
-  RNA_def_property_flag(prop, PROP_SKIP_SAVE);
-
   prop = RNA_def_boolean(
       ot->srna,
       "instance_collections",
