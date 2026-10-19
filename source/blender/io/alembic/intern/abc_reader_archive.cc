@@ -150,7 +150,7 @@ bool ArchiveReader::is_blender_archive_version_prior_44()
   const MetaData &abc_metadata = m_archive.getPtr()->getMetaData();
 
   /* Was the incoming Archive written by Blender? If so, make the version check. */
-  if (abc_metadata.get(Alembic::Abc::kApplicationNameKey) == "Blender") {
+  if (abc_metadata.get(Alembic::Abc::kApplicationNameKey) == "Fruitbat") {
     return abc_metadata.get("blender_version") < "v4.4";
   }
 

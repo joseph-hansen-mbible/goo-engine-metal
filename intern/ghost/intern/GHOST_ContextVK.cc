@@ -1025,9 +1025,9 @@ GHOST_TSuccess GHOST_ContextVK::initializeDrawingContext()
   if (!vulkan_device.has_value()) {
     VkApplicationInfo app_info = {};
     app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    app_info.pApplicationName = "Blender";
+    app_info.pApplicationName = "Fruitbat";
     app_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    app_info.pEngineName = "Blender";
+    app_info.pEngineName = "Fruitbat";
     app_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     app_info.apiVersion = VK_MAKE_VERSION(m_context_major_version, m_context_minor_version, 0);
 

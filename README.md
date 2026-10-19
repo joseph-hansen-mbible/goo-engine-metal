@@ -2,14 +2,14 @@
 Fork-specific README. See COPYING for licensing (GPL, inherited from Blender).
 -->
 
-Goo Engine 4.4.3 — Apple Metal (MSL) Port
+Fruitbat 4.4.3 — Apple Metal (MSL) Port
 =========================================
 
-An **unofficial** port of [Goo Engine](https://github.com/dillongoostudios/goo-engine) 4.4.3 —
+An **unofficial** port of [Fruitbat](https://github.com/dillongoostudios/goo-engine) 4.4.3 —
 the NPR / anime-focused Blender fork by [DillonGoo Studios](https://www.youtube.com/dillongoo) —
 to the **Apple Metal** backend, so that it runs on Apple Silicon Macs.
 
-Goo Engine v4.4 was written against OpenGL. On macOS it crashed at startup on many scenes and, where
+Fruitbat v4.4 was written against OpenGL. On macOS it crashed at startup on many scenes and, where
 it did run, rendered shadows incorrectly. Blender's `mtl_shader_generator` translates GLSL to MSL
 automatically, but a number of things it cannot translate had to be fixed by hand. This branch is
 that work.
@@ -110,11 +110,11 @@ diagnostics, GPU capture anchors). Happy to strip it for a merge-ready patch on 
 Credits & License
 -----------------
 
-All credit for Goo Engine itself belongs to [DillonGoo Studios](https://www.youtube.com/dillongoo)
+All credit for Fruitbat itself belongs to [DillonGoo Studios](https://www.youtube.com/dillongoo)
 and its maintainer CodyWinch, and to the Blender Foundation for Blender. This fork only adds Metal
 backend support.
 
-- Goo Engine: <https://github.com/dillongoostudios/goo-engine> · [Patreon](https://www.patreon.com/dillongoo)
+- Fruitbat: <https://github.com/dillongoostudios/goo-engine> · [Patreon](https://www.patreon.com/dillongoo)
 - Blender: <https://www.blender.org>
 
 Blender as a whole is licensed under the **GNU General Public License, Version 3**; individual files

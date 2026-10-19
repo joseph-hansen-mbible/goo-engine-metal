@@ -15,7 +15,7 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_input<decl::Bool>("Ignore Scene Override")
       .default_value(true)
       .description(
-          "Ignores the Goo Engine geometry nodes override scene setting and uses the original active camera");
+          "Ignores the Fruitbat geometry nodes override scene setting and uses the original active camera");
 }
 
 static void node_exec(GeoNodeExecParams params)

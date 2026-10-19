@@ -330,9 +330,9 @@ class NODE_MT_category_shader_vector(Menu):
         node_add_menu.draw_assets_for_catalog(layout, self.bl_label)
 
 
-class NODE_MT_category_goo_engine(Menu):
-    bl_idname = "NODE_MT_category_goo_engine"
-    bl_label = "Goo Engine"
+class NODE_MT_category_fruitbat(Menu):
+    bl_idname = "NODE_MT_category_fruitbat"
+    bl_label = "Fruitbat"
 
     def draw(self, _context):
         layout = self.layout
@@ -386,7 +386,7 @@ class NODE_MT_shader_node_add_all(Menu):
         layout.menu("NODE_MT_category_shader_shader")
         layout.menu("NODE_MT_category_shader_texture")
         layout.menu("NODE_MT_category_shader_vector")
-        layout.menu("NODE_MT_category_goo_engine")
+        layout.menu("NODE_MT_category_fruitbat")
         layout.separator()
         layout.menu("NODE_MT_category_shader_script")
         layout.separator()
@@ -405,7 +405,7 @@ classes = (
     NODE_MT_category_shader_shader,
     NODE_MT_category_shader_texture,
     NODE_MT_category_shader_vector,
-    NODE_MT_category_goo_engine,
+    NODE_MT_category_fruitbat,
     NODE_MT_category_shader_script,
     NODE_MT_category_shader_group,
 )

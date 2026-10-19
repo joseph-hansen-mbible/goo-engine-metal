@@ -168,9 +168,9 @@ bool VKBackend::is_supported()
 
   /* Initialize an vulkan 1.2 instance. */
   VkApplicationInfo vk_application_info = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
-  vk_application_info.pApplicationName = "Blender";
+  vk_application_info.pApplicationName = "Fruitbat";
   vk_application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  vk_application_info.pEngineName = "Blender";
+  vk_application_info.pEngineName = "Fruitbat";
   vk_application_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
   vk_application_info.apiVersion = VK_API_VERSION_1_2;
 
@@ -261,9 +261,9 @@ void VKBackend::platform_init()
 
   /* Query for all compatible devices */
   VkApplicationInfo vk_application_info = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
-  vk_application_info.pApplicationName = "Blender";
+  vk_application_info.pApplicationName = "Fruitbat";
   vk_application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  vk_application_info.pEngineName = "Blender";
+  vk_application_info.pEngineName = "Fruitbat";
   vk_application_info.engineVersion = VK_MAKE_VERSION(1, 0, 0);
   vk_application_info.apiVersion = VK_API_VERSION_1_2;
 
