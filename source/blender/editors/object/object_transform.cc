@@ -812,6 +812,7 @@ static int apply_objects_internal(bContext *C,
   }
 
   for (Object *ob : objects) {
+    const bool ob_apply_loc = apply_loc && !(ob->transflag & OB_APPLY_LOCK_LOCATION);
     /* calculate rotation/scale matrix */
     if (apply_scale && apply_rot) {
       BKE_object_to_mat3(ob, rsmat);
@@ -838,7 +839,7 @@ static int apply_objects_internal(bContext *C,
     copy_m4_m3(mat, rsmat);
 
     /* calculate translation */
-    if (apply_loc) {
+    if (ob_apply_loc) {
       add_v3_v3v3(mat[3], ob->loc, ob->dloc);
 
       if (!(apply_scale && apply_rot)) {
@@ -972,7 +973,7 @@ static int apply_objects_internal(bContext *C,
        *    sacrifice for having an easy way to do this.
        */
 
-      if ((apply_loc == false) && (apply_rot == false) && (apply_scale == true)) {
+      if ((ob_apply_loc == false) && (apply_rot == false) && (apply_scale == true)) {
         float max_scale = max_fff(fabsf(ob->scale[0]), fabsf(ob->scale[1]), fabsf(ob->scale[2]));
         ob->empty_drawsize *= max_scale;
       }
@@ -1018,14 +1019,14 @@ static int apply_objects_internal(bContext *C,
       mul_m4_m4_post(_mat, obact_parent);
       mul_m4_m4_post(_mat, obact_parentinv);
 
-      if (apply_loc && apply_scale && apply_rot) {
+      if (ob_apply_loc && apply_scale && apply_rot) {
         BKE_object_apply_mat4(ob, _mat, false, true);
       }
       else {
         Object ob_temp = dna::shallow_copy(*ob);
         BKE_object_apply_mat4(&ob_temp, _mat, false, true);
 
-        if (apply_loc) {
+        if (ob_apply_loc) {
           copy_v3_v3(ob->loc, ob_temp.loc);
         }
 
@@ -1042,7 +1043,7 @@ static int apply_objects_internal(bContext *C,
       }
     }
     else {
-      if (apply_loc) {
+      if (ob_apply_loc) {
         zero_v3(ob->loc);
         zero_v3(ob->dloc);
       }

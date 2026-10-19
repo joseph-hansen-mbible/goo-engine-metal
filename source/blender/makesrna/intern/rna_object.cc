@@ -3203,6 +3203,15 @@ static void rna_def_object(BlenderRNA *brna)
   RNA_def_property_ui_icon(prop, ICON_UNLOCKED, 1);
   RNA_def_property_update(prop, NC_OBJECT | ND_TRANSFORM, "rna_Object_internal_update");
 
+  /* -- Skip Location on Apply -- */
+prop = RNA_def_property(srna, "use_apply_lock_location", PROP_BOOLEAN, PROP_NONE);
+RNA_def_property_boolean_sdna(prop, nullptr, "transflag", OB_APPLY_LOCK_LOCATION);
+RNA_def_property_ui_text(prop,
+                         "Skip Location When Applying Transforms",
+                         "When applying transforms, do not apply the location component, "
+                         "leaving the object's origin unchanged");
+RNA_def_property_update(prop, NC_OBJECT | ND_TRANSFORM, "rna_Object_internal_update");
+
   /* matrix */
   prop = RNA_def_property(srna, "matrix_world", PROP_FLOAT, PROP_MATRIX);
   RNA_def_property_multi_array(prop, 2, rna_matrix_dimsize_4x4);

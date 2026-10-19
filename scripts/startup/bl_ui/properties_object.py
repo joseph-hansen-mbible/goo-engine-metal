@@ -81,6 +81,11 @@ class OBJECT_PT_transform(ObjectButtonsPanel, Panel):
         row.prop(ob, "scale")
         row.use_property_decorate = False
         row.prop(ob, "lock_scale", text="", emboss=False, icon='DECORATE_UNLOCKED')
+        
+        col.separator()
+        
+        col.prop(ob, "use_apply_lock_location",
+                 text="Skip Location When Applying Transforms")
 
 
 class OBJECT_PT_delta_transform(ObjectButtonsPanel, Panel):
