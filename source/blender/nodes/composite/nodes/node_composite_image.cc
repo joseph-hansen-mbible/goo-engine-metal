@@ -445,20 +445,55 @@ class ImageOperation : public NodeOperation {
   using NodeOperation::NodeOperation;
 
   void execute() override
-  {
-    for (const bNodeSocket *output : this->node()->output_sockets()) {
-      compute_output(output->identifier);
+{
+  // Read the Frame integer socket — get it from the bNodeSocket default value
+  // or from a connected single-pixel result if someone drives it.
+  int frame_input = get_frame_input();
+
+  for (const bNodeSocket *output : this->node()->output_sockets()) {
+    compute_output(output->identifier, frame_input);
+  }
+}
+
+int get_frame_input()
+{
+  // Find the "Frame" input socket on the bNode
+  const bNodeSocket *sock = blender::bke::node_find_socket(&bnode(), SOCK_IN, "Frame");
+  if (sock == nullptr) {
+    return 1;
+  }
+
+  // If the socket has a link driving it, read from the Result
+  // (the input result will be a 1x1 float texture)
+  if (sock->is_directly_linked()) {
+    Result &input = get_input("Frame");
+    if (input.is_allocated()) {
+      // Single-pixel float — round to int
+      return int(input.load_pixel<float>(int2(0, 0)));
     }
   }
 
-  void compute_output(StringRef identifier)
+  // Otherwise read the socket's stored default integer value
+  const bNodeSocketValueInt *val =
+      static_cast<const bNodeSocketValueInt *>(sock->default_value);
+  return val->value;
+}
+
+  void compute_output(StringRef identifier, int frame_override)
   {
     if (!should_compute_output(identifier)) {
       return;
     }
 
+    // Temporarily override the image user's frame
+    ImageUser *iuser = get_image_user();
+    const int saved_framenr = iuser->framenr;
+    iuser->framenr = frame_override;
+
     Result cached_image = context().cache_manager().cached_images.get(
-        context(), get_image(), get_image_user(), get_pass_name(identifier));
+        context(), get_image(), iuser, get_pass_name(identifier));
+
+    iuser->framenr = saved_framenr; // restore
 
     Result &result = get_result(identifier);
     if (!cached_image.is_allocated()) {
@@ -466,7 +501,6 @@ class ImageOperation : public NodeOperation {
       return;
     }
 
-    /* Alpha is not an actual pass, but one that is extracted from the combined pass. */
     if (identifier == "Alpha") {
       extract_alpha(context(), cached_image, result);
     }
@@ -541,6 +575,18 @@ const char *node_cmp_rlayers_sock_to_pass(int sock_index)
 }
 
 namespace blender::nodes::node_composite_render_layer_cc {
+
+/* Added declarative for the Frame Input
+- Joseph
+*/
+static void cmp_node_image_declare(NodeDeclarationBuilder &b)
+{
+  b.add_input<decl::Int>("Frame")
+      .default_value(1)
+      .min(1)
+      .max(1048574)
+      .description("Frame number to use from image sequence or movie");
+}
 
 static void node_composit_init_rlayers(const bContext *C, PointerRNA *ptr)
 {
@@ -821,6 +867,13 @@ void register_node_type_cmp_rlayers()
   static blender::bke::bNodeType ntype;
 
   cmp_node_type_base(&ntype, "CompositorNodeRLayers", CMP_NODE_R_LAYERS);
+
+  /*
+  Register declared input
+  - Joseph
+  */
+  ntype.declare = file_ns::cmp_node_image_declare;
+
   ntype.ui_name = "Render Layers";
   ntype.ui_description = "Input render passes from a scene render";
   ntype.enum_name_legacy = "R_LAYERS";

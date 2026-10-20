@@ -87,10 +87,16 @@ static int image_cmp_frame(const void *a, const void *b)
   const ImageFrame *frame_a = static_cast<const ImageFrame *>(a);
   const ImageFrame *frame_b = static_cast<const ImageFrame *>(b);
 
-  if (frame_a->framenr < frame_b->framenr) {
+/* I've reversed the sort order here, because in order to correctly import an image sequence,
+you have to choose Modified Date and turn Reverse on, otherwise it imports backwards. 
+It's one of the more baffling things about Blender. By flipping the sequence here, 
+the Reverse checkbox can be safely ignored 
+- Joseph
+*/
+  if (frame_a->framenr > frame_b->framenr) {
     return -1;
   }
-  if (frame_a->framenr > frame_b->framenr) {
+  if (frame_a->framenr < frame_b->framenr) {
     return 1;
   }
   return 0;

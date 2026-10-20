@@ -346,11 +346,9 @@ static void node_buts_image_user(uiLayout *layout,
 
   if (ELEM(source, IMA_SRC_SEQUENCE, IMA_SRC_MOVIE)) {
     col = uiLayoutColumn(layout, true);
-    uiItemR(col, ptr, "frame_duration", DEFAULT_FLAGS, std::nullopt, ICON_NONE);
-    uiItemR(col, ptr, "frame_start", DEFAULT_FLAGS, std::nullopt, ICON_NONE);
-    uiItemR(col, ptr, "frame_offset", DEFAULT_FLAGS, std::nullopt, ICON_NONE);
-    uiItemR(col, ptr, "use_cyclic", DEFAULT_FLAGS, std::nullopt, ICON_NONE);
-    uiItemR(col, ptr, "use_auto_refresh", DEFAULT_FLAGS, std::nullopt, ICON_NONE);
+     // Frame is now driven by the node's integer input socket
+     // - Joseph
+    uiItemR(col, ptr, "use_auto_refresh", DEFAULT_FLAGS, nullptr, ICON_NONE);
   }
 
   if (show_layer_selection && RNA_enum_get(imaptr, "type") == IMA_TYPE_MULTILAYER &&
