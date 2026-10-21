@@ -18,6 +18,7 @@
 
 #include "DNA_anim_types.h"
 #include "DNA_brush_types.h"
+#include "DNA_camera_types.h"
 #include "DNA_collection_types.h"
 #include "DNA_curveprofile_types.h"
 #include "DNA_defaults.h"
@@ -1012,7 +1013,7 @@ static void scene_foreach_cache(ID *id,
     key.identifier = offsetof(Editing, runtime.thumbnail_cache);
     key.identifier = offsetof(Scene, eevee.light_cache_data);
     function_callback(id, &key, (void **)&scene->ed->runtime.thumbnail_cache, 0, user_data);
-  
+
     function_callback(id,
                       &key,
                       (void **)&scene->eevee.light_cache_data,
@@ -1020,7 +1021,6 @@ static void scene_foreach_cache(ID *id,
                       user_data);
   }
 }
-
 
 static void scene_blend_write(BlendWriter *writer, ID *id, const void *id_address)
 {
@@ -2251,6 +2251,7 @@ bool BKE_scene_camera_switch_update(Scene *scene)
 {
 #ifdef DURIAN_CAMERA_SWITCH
   Object *camera = BKE_scene_camera_switch_find(scene);
+  BKE_scene_camera_resolution_update(scene);
   if (camera && (camera != scene->camera)) {
     scene->camera = camera;
     DEG_id_tag_update(&scene->id, ID_RECALC_SYNC_TO_EVAL | ID_RECALC_PARAMETERS);
@@ -2375,6 +2376,21 @@ void BKE_scene_frame_set(Scene *scene, float frame)
   double intpart;
   scene->r.subframe = modf(double(frame), &intpart);
   scene->r.cfra = int(intpart);
+
+  /* Update scene resolution from active camera on frame change. */
+  BKE_scene_camera_resolution_update(scene);
+}
+
+void BKE_scene_camera_resolution_update(Scene *scene)
+{
+  if (scene && scene->camera && scene->camera->type == OB_CAMERA && scene->camera->data) {
+    Camera *cam = static_cast<Camera *>(scene->camera->data);
+    if (cam->resolution_x > 0 && cam->resolution_y > 0 && cam->resolution_percentage > 0.0f) {
+      scene->r.xsch = cam->resolution_x;
+      scene->r.ysch = cam->resolution_y;
+      scene->r.size = short(cam->resolution_percentage);
+    }
+  }
 }
 
 /* -------------------------------------------------------------------- */

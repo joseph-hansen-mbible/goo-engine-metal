@@ -107,10 +107,15 @@ class RENDER_PT_format(RenderOutputButtonsPanel, Panel):
 
         rd = context.scene.render
 
-        col = layout.column(align=True)
-        col.prop(rd, "resolution_x", text="Resolution X")
-        col.prop(rd, "resolution_y", text="Y")
-        col.prop(rd, "resolution_percentage", text="%")
+        # Resolution is controlled by the active camera, only show scene resolution without one.
+        if not context.scene.camera:
+            col = layout.column(align=True)
+            col.prop(rd, "resolution_x", text="Resolution X")
+            col.prop(rd, "resolution_y", text="Y")
+            col.prop(rd, "resolution_percentage", text="%")
+        else:
+            col = layout.column(align=True)
+            col.label(text="Resolution controlled by active camera", icon='CAMERA_DATA')
 
         col = layout.column(align=True)
         col.prop(rd, "pixel_aspect_x", text="Aspect X")

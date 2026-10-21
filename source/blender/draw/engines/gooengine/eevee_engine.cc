@@ -170,7 +170,7 @@ static void eevee_cache_finish(void *vedata)
   uint tot_samples = scene_eval->eevee.taa_render_samples;
   uint vl_samples = draw_ctx->view_layer->samples;
 
-  if (vl_samples > 0){
+  if (vl_samples > 0) {
     tot_samples = vl_samples;
   }
 
@@ -223,7 +223,12 @@ static void eevee_draw_scene(void *vedata)
   if (DRW_state_is_image_render()) {
     const DRWContextState *draw_ctx = DRW_context_state_get();
     const Scene *scene = draw_ctx->scene;
-    loop_len = std::max(1, scene->eevee.taa_samples);
+    /* Cycles has a different option for view layer sample overrides. The current behavior
+     * matches the default `Use`, which simply overrides if non-zero. */
+    const uint render_sample_count = (draw_ctx->view_layer->samples > 0) ?
+                                         uint(draw_ctx->view_layer->samples) :
+                                         scene->eevee.taa_render_samples;
+    loop_len = std::max(1, int(render_sample_count));
   }
 
   if (stl->effects->bypass_drawing) {
@@ -258,7 +263,7 @@ static void eevee_draw_scene(void *vedata)
     EEVEE_shadows_update(sldata, static_cast<EEVEE_Data *>(vedata));
     EEVEE_lightprobes_refresh(sldata, static_cast<EEVEE_Data *>(vedata));
     EEVEE_lightprobes_refresh_planar(sldata, static_cast<EEVEE_Data *>(vedata));
-  
+
     /* Refresh shadows */
     EEVEE_shadows_draw(sldata, static_cast<EEVEE_Data *>(vedata), stl->effects->taa_view);
 
@@ -405,8 +410,7 @@ static void eevee_draw_scene(void *vedata)
  * ID_RECALC_BASE_FLAGS: aggregated base flags (selection/visibility/holdout) set by
  *   view3d_select.cc alongside ID_RECALC_SELECT on each click. Does not change geometry,
  *   materials, or any rendered property — safe to suppress for TAA. */
-static constexpr uint EEVEE_NON_VISUAL_RECALC = uint(ID_RECALC_SELECT) |
-                                                uint(ID_RECALC_EDITORS) |
+static constexpr uint EEVEE_NON_VISUAL_RECALC = uint(ID_RECALC_SELECT) | uint(ID_RECALC_EDITORS) |
                                                 uint(ID_RECALC_BASE_FLAGS);
 
 /* Metal only: ignore selection-only depsgraph updates so the TAA accumulation (and with it the

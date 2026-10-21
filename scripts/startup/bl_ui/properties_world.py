@@ -143,8 +143,7 @@ class EEVEE_WORLD_PT_surface(WorldButtonsPanel, Panel):
                 layout.label(text="No output node")
         else:
             layout.prop(world, "color")
-
-        layout.prop(rd, "film_transparent", text="Transparent")
+            layout.prop(rd, "film_transparent", text="Transparent")
 
 
 class EEVEE_WORLD_PT_volume(WorldButtonsPanel, Panel):

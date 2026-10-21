@@ -686,6 +686,7 @@ static const EnumPropertyItem eevee_resolution_scale_items[] = {
 
 #  include "DNA_anim_types.h"
 #  include "DNA_cachefile_types.h"
+#  include "DNA_camera_types.h"
 #  include "DNA_color_types.h"
 #  include "DNA_grease_pencil_types.h"
 #  include "DNA_linestyle_types.h"
@@ -942,6 +943,25 @@ static void rna_Scene_camera_update(Main *bmain, Scene * /*scene_unused*/, Point
 {
   wmWindowManager *wm = static_cast<wmWindowManager *>(bmain->wm.first);
   Scene *scene = (Scene *)ptr->data;
+
+  /* Update scene resolution from new active camera. */
+  if (scene && scene->camera && scene->camera->type == OB_CAMERA && scene->camera->data) {
+    Camera *cam = static_cast<Camera *>(scene->camera->data);
+    if (cam->resolution_x > 0 && cam->resolution_y > 0) {
+      scene->r.xsch = cam->resolution_x;
+      scene->r.ysch = cam->resolution_y;
+    }
+    else {
+      /* If camera doesn't have resolution set, initialize it from scene. */
+      if (cam->resolution_x <= 0) {
+        cam->resolution_x = scene->r.xsch;
+      }
+      if (cam->resolution_y <= 0) {
+        cam->resolution_y = scene->r.ysch;
+      }
+    }
+    WM_main_add_notifier(NC_SCENE | ND_RENDER_OPTIONS, scene);
+  }
 
   WM_windows_scene_data_sync(&wm->windows, scene);
   DEG_id_tag_update(&scene->id, ID_RECALC_SYNC_TO_EVAL);
@@ -2272,14 +2292,14 @@ static void rna_View3DCursor_rotation_axis_angle_set(PointerRNA *ptr, const floa
 static void rna_View3DCursor_matrix_get(PointerRNA *ptr, float *values)
 {
   const View3DCursor *cursor = static_cast<const View3DCursor *>(ptr->data);
-  copy_m4_m4((float(*)[4])values, cursor->matrix<blender::float4x4>().ptr());
+  copy_m4_m4((float (*)[4])values, cursor->matrix<blender::float4x4>().ptr());
 }
 
 static void rna_View3DCursor_matrix_set(PointerRNA *ptr, const float *values)
 {
   View3DCursor *cursor = static_cast<View3DCursor *>(ptr->data);
   float unit_mat[4][4];
-  normalize_m4_m4(unit_mat, (const float(*)[4])values);
+  normalize_m4_m4(unit_mat, (const float (*)[4])values);
   cursor->set_matrix(blender::float4x4(unit_mat), false);
 }
 
@@ -2471,6 +2491,17 @@ static void rna_SceneCamera_update(Main * /*bmain*/, Scene * /*scene*/, PointerR
 
   if (camera && (camera->type == OB_CAMERA)) {
     DEG_id_tag_update(&camera->id, ID_RECALC_GEOMETRY);
+
+    /* Sync scene resolution to the active camera when scene resolution changes. */
+    if (camera->data) {
+      Camera *cam = static_cast<Camera *>(camera->data);
+      cam->resolution_x = scene->r.xsch;
+      cam->resolution_y = scene->r.ysch;
+      cam->resolution_percentage = float(scene->r.size);
+
+      WM_main_add_notifier(NC_CAMERA | ND_DRAW_RENDER_VIEWPORT, camera);
+      DEG_id_tag_update(&scene->id, ID_RECALC_SYNC_TO_EVAL);
+    }
   }
   if (gn_camera && (gn_camera->type == OB_CAMERA)) {
     DEG_id_tag_update(&gn_camera->id, ID_RECALC_GEOMETRY);
@@ -3839,9 +3870,7 @@ static void rna_def_tool_settings(BlenderRNA *brna)
   RNA_def_property_boolean_default(prop, false);
   RNA_def_property_ui_icon(prop, ICON_AUTOMERGE_OFF, 1);
   RNA_def_property_ui_text(
-      prop,
-      "Autoclose",
-      "Close the last drawn stroke before post processing");
+      prop, "Autoclose", "Close the last drawn stroke before post processing");
   RNA_def_property_clear_flag(prop, PROP_ANIMATABLE);
   RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, NULL);
 
@@ -8655,7 +8684,10 @@ static void rna_def_scene_eevee(BlenderRNA *brna)
 
   prop = RNA_def_property(srna, "use_shadow_id_high_bitdepth", PROP_BOOLEAN, PROP_NONE);
   RNA_def_property_boolean_sdna(prop, nullptr, "flag", SCE_EEVEE_SHADOW_ID_HIGH_BITDEPTH);
-  RNA_def_property_ui_text(prop, "High ID Bit Depth", "Use 32-bit shadow IDs (Enable if self-shadow does not work for some objects)");
+  RNA_def_property_ui_text(
+      prop,
+      "High ID Bit Depth",
+      "Use 32-bit shadow IDs (Enable if self-shadow does not work for some objects)");
   RNA_def_property_override_flag(prop, PROPOVERRIDE_OVERRIDABLE_LIBRARY);
   RNA_def_property_update(prop, NC_SCENE | ND_RENDER_OPTIONS, nullptr);
 
@@ -8818,7 +8850,10 @@ void RNA_def_scene(BlenderRNA *brna)
   RNA_def_property_struct_type(prop, "Object");
   RNA_def_property_override_flag(prop, PROPOVERRIDE_OVERRIDABLE_LIBRARY);
   RNA_def_property_pointer_funcs(prop, nullptr, nullptr, nullptr, "rna_Camera_object_poll");
-  RNA_def_property_ui_text(prop, "GeoNodes Active Camera Override", "Active camera, used for calculating geometry nodes active camera node");
+  RNA_def_property_ui_text(
+      prop,
+      "GeoNodes Active Camera Override",
+      "Active camera, used for calculating geometry nodes active camera node");
   RNA_def_property_update(prop, NC_SCENE | NA_EDITED, "rna_Scene_frame_update");
 
   prop = RNA_def_property(srna, "background_set", PROP_POINTER, PROP_NONE);

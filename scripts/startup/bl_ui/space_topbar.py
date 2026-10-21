@@ -50,7 +50,6 @@ class TOPBAR_HT_upper_bar(Header):
             layout.template_running_jobs()
 
         # Active workspace view-layer is retrieved through window, not through workspace.
-        layout.prop(scene, "camera", text="", icon='CAMERA_DATA')
         layout.template_ID(window, "scene", new="scene.new", unlink="scene.delete")
 
         row = layout.row(align=True)
@@ -60,6 +59,8 @@ class TOPBAR_HT_upper_bar(Header):
             new="scene.view_layer_add",
             unlink="scene.view_layer_remove",
         )
+
+        row.prop(scene, "camera", text="", icon='CAMERA_DATA')
 
 
 class TOPBAR_PT_tool_settings_extra(Panel):
@@ -111,19 +112,10 @@ class TOPBAR_MT_editor_menus(Menu):
     def draw(self, context):
         layout = self.layout
 
-        # Allow calling this menu directly (this might not be a header area).
-        if getattr(context.area, "show_menus", False):
-            layout.menu("TOPBAR_MT_blender", text="", icon='BLENDER')
-        else:
-            layout.menu("TOPBAR_MT_blender", text="Blender")
-
-        layout.menu("TOPBAR_MT_file")
-        layout.menu("TOPBAR_MT_edit")
-
-        layout.menu("TOPBAR_MT_render")
-
-        layout.menu("TOPBAR_MT_window")
-        layout.menu("TOPBAR_MT_help")
+        layout.menu("TOPBAR_MT_file", text="", icon='FILE_FOLDER')
+        layout.menu("TOPBAR_MT_edit", text="", icon='PREFERENCES')
+        layout.menu("TOPBAR_MT_render", text="", icon='RENDER_STILL')
+        layout.menu("TOPBAR_MT_window", text="", icon='WINDOW')
 
 
 class TOPBAR_MT_blender(Menu):

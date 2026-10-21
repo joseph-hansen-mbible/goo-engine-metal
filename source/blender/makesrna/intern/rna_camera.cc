@@ -28,6 +28,7 @@
 #  include "BKE_camera.h"
 #  include "BKE_object.hh"
 #  include "BKE_report.hh"
+#  include "BKE_scene.hh"
 
 #  include "DEG_depsgraph.hh"
 #  include "DEG_depsgraph_build.hh"
@@ -84,6 +85,25 @@ static void rna_Camera_dependency_update(Main *bmain, Scene * /*scene*/, Pointer
   Camera *camera = (Camera *)ptr->owner_id;
   DEG_relations_tag_update(bmain);
   DEG_id_tag_update(&camera->id, 0);
+}
+
+static void rna_Camera_resolution_update(Main *bmain, Scene *scene, PointerRNA *ptr)
+{
+  Camera *cam = (Camera *)ptr->owner_id;
+
+  if (scene == nullptr) {
+    scene = static_cast<Scene *>(bmain->scenes.first);
+  }
+  if (!scene) {
+    return;
+  }
+
+  /* Only update if this camera is the active camera for the scene. */
+  if (scene->camera && scene->camera->data == (ID *)cam) {
+    BKE_scene_camera_resolution_update(scene);
+    WM_main_add_notifier(NC_SCENE | ND_RENDER_OPTIONS, scene);
+    DEG_id_tag_update(&scene->id, ID_RECALC_SYNC_TO_EVAL);
+  }
 }
 
 static CameraBGImage *rna_Camera_background_images_new(Camera *cam)
@@ -726,6 +746,32 @@ void RNA_def_camera(BlenderRNA *brna)
       prop, "Sensor Height", "Vertical size of the image sensor area in millimeters");
   RNA_def_property_update(prop, NC_OBJECT | ND_DRAW, "rna_Camera_update");
 
+  /* Camera-specific resolution override. */
+  prop = RNA_def_property(srna, "resolution_x", PROP_INT, PROP_PIXEL);
+  RNA_def_property_int_sdna(prop, nullptr, "resolution_x");
+  RNA_def_property_range(prop, 1, INT_MAX);
+  RNA_def_property_ui_range(prop, 1, 65536, 1, -1);
+  RNA_def_property_ui_text(prop, "Resolution X", "Camera-specific horizontal resolution");
+  RNA_def_property_update(
+      prop, NC_CAMERA | ND_DRAW_RENDER_VIEWPORT, "rna_Camera_resolution_update");
+
+  prop = RNA_def_property(srna, "resolution_y", PROP_INT, PROP_PIXEL);
+  RNA_def_property_int_sdna(prop, nullptr, "resolution_y");
+  RNA_def_property_range(prop, 1, INT_MAX);
+  RNA_def_property_ui_range(prop, 1, 65536, 1, -1);
+  RNA_def_property_ui_text(prop, "Resolution Y", "Camera-specific vertical resolution");
+  RNA_def_property_update(
+      prop, NC_CAMERA | ND_DRAW_RENDER_VIEWPORT, "rna_Camera_resolution_update");
+
+  prop = RNA_def_property(srna, "resolution_percentage", PROP_FLOAT, PROP_PERCENTAGE);
+  RNA_def_property_float_sdna(prop, nullptr, "resolution_percentage");
+  RNA_def_property_range(prop, 1.0f, 32767.0f);
+  RNA_def_property_ui_range(prop, 1.0f, 100.0f, 10, 1);
+  RNA_def_property_ui_text(
+      prop, "Resolution Scale", "Percentage scale for camera render resolution");
+  RNA_def_property_update(
+      prop, NC_CAMERA | ND_DRAW_RENDER_VIEWPORT, "rna_Camera_resolution_update");
+
   prop = RNA_def_property(srna, "ortho_scale", PROP_FLOAT, PROP_NONE);
   RNA_def_property_float_sdna(prop, nullptr, "ortho_scale");
   RNA_def_property_range(prop, FLT_MIN, FLT_MAX);
@@ -864,6 +910,11 @@ void RNA_def_camera(BlenderRNA *brna)
   RNA_def_property_boolean_sdna(prop, nullptr, "dtx", CAM_DTX_HARMONY_TRI_B);
   RNA_def_property_ui_text(
       prop, "Harmonious Triangle B", "Display harmony B composition guide inside the camera view");
+  RNA_def_property_update(prop, NC_CAMERA | ND_DRAW_RENDER_VIEWPORT, nullptr);
+
+  prop = RNA_def_property(srna, "composition_guide_color", PROP_FLOAT, PROP_COLOR);
+  RNA_def_property_ui_text(
+      prop, "Composition Guide Color", "Color and alpha for compositional guide overlays");
   RNA_def_property_update(prop, NC_CAMERA | ND_DRAW_RENDER_VIEWPORT, nullptr);
 
   /* Panoramic settings. */
