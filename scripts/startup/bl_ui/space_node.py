@@ -216,7 +216,10 @@ class NODE_HT_header(Header):
         sub = row.row(align=True)
         sub.active = overlay.show_overlays
         sub.popover(panel="NODE_PT_overlay", text="")
-
+        row.separator()
+        row.operator("node.view_all")
+        
+        row.operator("node.easy_bake_step1", text="Finish" if bpy.fruitbat_node_easy_bake_active else  "Bake")
 
 class NODE_MT_editor_menus(Menu):
     bl_idname = "NODE_MT_editor_menus"

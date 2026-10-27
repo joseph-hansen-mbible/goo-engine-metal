@@ -27,6 +27,7 @@ from bpy.app.translations import (
     pgettext_rpt as rpt_,
 )
 
+bpy.fruitbat_node_easy_bake_active = False
 
 class NodeSetting(PropertyGroup):
     value: StringProperty(
@@ -282,8 +283,36 @@ class NODE_OT_tree_path_parent(Operator):
         space.path.pop()
 
         return {'FINISHED'}
-
-
+    
+class NODE_OT_EasyBakeStepOne(Operator):
+    """"""
+    bl_idname = "node.easy_bake_step1"
+    bl_label = "Easy Bake"
+    bl_options = {'REGISTER', 'UNDO'}
+    
+    def execute(self, context):
+        bpy.fruitbat_node_easy_bake_active = not bpy.fruitbat_node_easy_bake_active
+        
+        if bpy.fruitbat_node_easy_bake_active:
+            # step 1
+            
+            # make new UV map
+            g = bpy.context.selected_objects
+            for f in g:
+                f.data.uv_layers.new(name = "_baked")
+            
+            # switch to new UV layer
+            f.data.uv_layers.active = f.data.uv_layers[-1]
+            
+            # unwrap 
+            # ??
+            
+        else:
+            # step 2 
+            pass
+        
+        return {'FINISHED'}
+    
 class NodeInterfaceOperator():
     @classmethod
     def poll(cls, context):
@@ -556,4 +585,5 @@ classes = (
     NODE_OT_tree_path_parent,
     NODE_OT_viewer_shortcut_get,
     NODE_OT_viewer_shortcut_set,
-)
+    NODE_OT_EasyBakeStepOne
+    )
