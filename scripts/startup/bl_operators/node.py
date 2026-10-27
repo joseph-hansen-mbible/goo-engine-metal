@@ -298,8 +298,12 @@ class NODE_OT_EasyBakeStepOne(Operator):
             
             # make new UV map
             g = bpy.context.selected_objects
-            for f in g:
-                f.data.uv_layers.new(name = "_baked")
+            if g is not [] or None:
+                for f in g:
+                    f.data.uv_layers.new(name = "_baked")
+            else:
+                self.report({"WARNING"}, "No objects selected. Please select objects to bake")
+            return {'CANCELLED'}
             
             # switch to new UV layer
             f.data.uv_layers.active = f.data.uv_layers[-1]
