@@ -294,26 +294,81 @@ class NODE_OT_EasyBakeStepOne(Operator):
         bpy.fruitbat_node_easy_bake_active = not bpy.fruitbat_node_easy_bake_active
         
         if bpy.fruitbat_node_easy_bake_active:
-            # step 1
-            
             # make new UV map
             g = bpy.context.selected_objects
             if g is not [] or None:
                 for f in g:
                     f.data.uv_layers.new(name = "_baked")
+                    
+                    # switch to new UV layer
+                    f.data.uv_layers.active = f.data.uv_layers[-1]
             else:
                 self.report({"WARNING"}, "No objects selected. Please select objects to bake")
-            return {'CANCELLED'}
-            
-            # switch to new UV layer
-            f.data.uv_layers.active = f.data.uv_layers[-1]
+                return {'CANCELLED'}
             
             # unwrap 
-            # ??
+            sel_objs = [obj for obj in bpy.context.selected_objects if obj.type == 'MESH']
+            saved = sel_objs.copy()
+
+            for obj in sel_objs:
+                obj.select_set(False)
+
+            while len(sel_objs) >= 1:  
+                            
+                obj1 = sel_objs.pop() 
+                
+                obj1.select_set(True) 
+                
+                bpy.context.view_layer.objects.active = obj1
+                
+                bpy.ops.object.editmode_toggle()              
+                
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.uv.select_all(action='SELECT')
+                bpy.ops.uv.smart_project()          
+
+            bpy.ops.uv.pack_islands(margin=.02)
+            
+            node_tree = bpy.context.active_object.material_slots[bpy.context.active_object.active_material_index].material.node_tree
+            
+            # add nodes
+            image_texture = node_tree.nodes.new(type="ShaderNodeTexImage")
+            image_texture.label = "Adjust UVs as needed before Bake"
+            uv_map = node_tree.nodes.new(type="ShaderNodeUVMap")
+            
+            uv_map.uv_map = "_baked"
+            
+            # link
+            node_tree.links.new(uv_map.outputs[0], image_texture.inputs[0])
+            
+            # select
+            node_tree.nodes.active = image_texture
+            
+            # set new image
+            bpy.ops.image.new(name = "baked " + bpy.context.active_object.material_slots[bpy.context.active_object.active_material_index].material.name)
+            image_texture.image = bpy.data.images[bpy.data.images.find("baked " + bpy.context.active_object.material_slots[bpy.context.active_object.active_material_index].material.name)]
+            
             
         else:
             # step 2 
-            pass
+            # switch to Cycles
+            bpy.context.scene.render.engine = 'CYCLES'
+            
+            # set samples to 1
+            bpy.context.scene.cycles.samples = 1
+            bpy.context.scene.cycles.preview_samples = 1
+            
+            # change bake type
+            bpy.data.scenes["Scene"].cycles.bake_type = 'EMIT'
+            
+            # bake
+            bpy.ops.object.bake(type='EMIT')
+            
+            # switch back to "Eevee"
+            bpy.context.scene.render.engine = 'BLENDER_EEVEE'
+            
+            # object mode
+            bpy.ops.object.editmode_toggle()
         
         return {'FINISHED'}
     
