@@ -1127,9 +1127,9 @@ class WM_OT_url_open_preset(Operator):
          _url_from_api),
 
         # Static URL's.
-        (('FUND', iface_("Development Fund"),
-          tip_("The donation program to support maintenance and improvements")),
-         "https://fund.blender.org"),
+        (('EIFA', iface_("Essential Information for Artists"),
+          tip_("Open the wiki")),
+         "https://github.com/museumofthebible/kids-interactive-game-unity6/wiki/Essential-Information-for-Artists"),
         (('BLENDER', "blender.org",
           tip_("Blender's official web-site")),
          "https://www.blender.org"),
@@ -3442,16 +3442,7 @@ class WM_MT_splash(Menu):
         sub.operator_context = 'INVOKE_DEFAULT'
         sub.operator("wm.open_mainfile", text="Open...", icon='FILE_FOLDER')
         col1.operator("wm.recover_last_session", icon='RECOVER_LAST')
-
-        col2 = split.column()
-
-        col2.operator("wm.url_open_preset", text="Donate", icon='FUND').type = 'FUND'
-        col2.operator("wm.url_open_preset", text="What's New", icon='URL').type = 'RELEASE_NOTES'
-
-        layout.separator()
-
-        if (not bpy.app.online_access) and bpy.app.online_access_override:
-            self.layout.label(text="Running in Offline Mode", icon='INTERNET_OFFLINE')
+        col1.operator("wm.url_open_preset", text="Essential Information for Artists", icon="INTERNET").type = 'EIFA'
 
         layout.separator()
 
@@ -3487,17 +3478,16 @@ class WM_MT_splash_about(Menu):
         del _ghost_backend, ghost_backend
 
         col.separator(factor=2.0)
-        col.label(text="Blender is free software")
+        col.label(text="Fruitbat is free software")
         col.label(text="Licensed under the GNU General Public License")
 
         col = split.column(align=True)
         col.emboss = 'PULLDOWN_MENU'
-        col.operator("wm.url_open_preset", text="Donate", icon='FUND').type = 'FUND'
+        col.operator("wm.url_open_preset", text="Essential Information for Artists", icon='INTERNET').type = 'EIFA'
         col.operator("wm.url_open_preset", text="What's New", icon='URL').type = 'RELEASE_NOTES'
         col.separator(factor=2.0)
         col.operator("wm.url_open_preset", text="Credits", icon='URL').type = 'CREDITS'
         col.operator("wm.url_open", text="License", icon='URL').url = "https://www.blender.org/about/license/"
-        col.operator("wm.url_open", text="Blender Store", icon='URL').url = "https://store.blender.org"
         col.operator("wm.url_open_preset", text="Blender Website", icon='URL').type = 'BLENDER'
 
 
