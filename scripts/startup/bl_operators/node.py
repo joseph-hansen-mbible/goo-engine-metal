@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import bpy
+import os
 from bpy.types import (
     FileHandler,
     Operator,
@@ -291,6 +292,11 @@ class NODE_OT_EasyBakeStepOne(Operator):
     bl_options = {'REGISTER', 'UNDO'}
     
     def execute(self, context):
+        # only works with a saved file
+        if bpy.data.filepath == '': 
+            self.report({"WARNING"}, "You must save the file first!")
+            return {'CANCELLED'}
+        
         bpy.fruitbat_node_easy_bake_active = not bpy.fruitbat_node_easy_bake_active
         
         if bpy.fruitbat_node_easy_bake_active:
@@ -363,6 +369,10 @@ class NODE_OT_EasyBakeStepOne(Operator):
             
             # bake
             bpy.ops.object.bake(type='EMIT')
+            
+            # save image
+            
+            bpy.data.images[bpy.data.images.find("baked " + bpy.context.active_object.material_slots[bpy.context.active_object.active_material_index].material.name)].save(filepath=os.path.sep.join([os.path.sep.join(bpy.data.filepath.split(os.path.sep)[:-1]), "baked " + bpy.context.active_object.material_slots[bpy.context.active_object.active_material_index].material.name]))
             
             # switch back to "Eevee"
             bpy.context.scene.render.engine = 'BLENDER_EEVEE'
